@@ -7,6 +7,7 @@ import numpy as np
 import random
 import sys
 from sklearn.metrics import r2_score
+from tqdm import tqdm
 
 from torch_geometric.loader import DataLoader
 
@@ -38,7 +39,7 @@ def main(model_type:str='dual'):
     # PARAMETERS                                         
     LEARNING_RATE = 0.005                 # learning rate of the optimizer
     EPOCHS = 30                           # number of epochs over the data
-    BATCH_SIZE = 1
+    BATCH_SIZE = 2
 
     # instantiate model
     model = ModulesGNN.GNN(
@@ -48,12 +49,12 @@ def main(model_type:str='dual'):
         lifted_operation = 'GAT',
         lifted_pool = 'max',
         grounded_num_layers = 3,
-        grounded_graph_embedding_size = 32,
+        grounded_graph_embedding_size = 16,
         grounded_operation = 'GAT',
         grounded_pool = 'max',
-        hidden_dimension = 128,
+        hidden_dimension = 256,
         dropout = 0.5
-    )
+    ).to(device)
     # instantiate optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
@@ -65,7 +66,7 @@ def main(model_type:str='dual'):
     for EPOCH in range(EPOCHS):
         model.train()
         losses = []
-        for _, (lifted_batch, grounded_batch, domain) in enumerate(train_loader):
+        for _, (lifted_batch, grounded_batch, domain) in tqdm(enumerate(train_loader), total=len(train_loader)):
             LX = None
             GX = None 
             if model_type == 'lifted':
@@ -98,7 +99,7 @@ def main(model_type:str='dual'):
         val_losses = []
         predictions = []
         true = []
-        for _, (lifted_batch, grounded_batch, domain) in enumerate(val_loader):
+        for _, (lifted_batch, grounded_batch, domain) in tqdm(enumerate(val_loader), total=len(val_loader)):
             with torch.no_grad():
                 LX = None
                 GX = None 
@@ -120,8 +121,8 @@ def main(model_type:str='dual'):
                 loss = loss_function(out.to(torch.float), y.to(torch.float))
                 val_losses.append(loss.item())
 
-                predictions.append(out.to(torch.float).item())    # use of .item() necessary to avoid warnings and future errors
-                true.append(y.to(torch.float).item())
+                predictions.append(out.to(torch.float))    # use of .item() necessary to avoid warnings and future errors
+                true.append(y.to(torch.float))
     
 
     predictions = []
@@ -151,8 +152,8 @@ def main(model_type:str='dual'):
             loss = loss_fn(out.to(torch.float), y.to(torch.float))
             losses.append(loss.item())
             
-            true.append(y.to(torch.float).item())
-            predictions.append(out.to(torch.float).item())
+            true.append(y.to(torch.float))
+            predictions.append(out.to(torch.float))
 
     print(f'Mean loss on test set : {sum(losses)/len(losses)}')
     print(f'r2 score on the test set : {r2_score(true, predictions)}')

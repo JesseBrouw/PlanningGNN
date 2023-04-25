@@ -50,7 +50,8 @@ class ConvolutionModule(torch.nn.Module):
 
     def forward(self, data):
         x, edge_index, batch = data.x.to(torch.float), data.edge_index, data.batch
-        handcrafted = x.sum(dim=0)/x.sum(dim=0).sum()
+        graph_size = x.sum(dim=0).sum()
+        handcrafted = torch.cat((x.sum(dim=0)/graph_size, torch.asarray([torch.log(graph_size)])))
         x = F.relu(self.conv1(x, edge_index))
         for conv in self.convs:
             x = F.relu(conv(x, edge_index))
@@ -131,9 +132,9 @@ class GNN(torch.nn.Module):
         )
         
         input_dim_mapping = {
-            'dual' : lifted_graph_embedding_size+16 + grounded_graph_embedding_size+7,
-            'lifted' : lifted_graph_embedding_size+16,
-            'grounded' : grounded_graph_embedding_size+7
+            'dual' : lifted_graph_embedding_size+17 + grounded_graph_embedding_size+8,
+            'lifted' : lifted_graph_embedding_size+17,
+            'grounded' : grounded_graph_embedding_size+8
         }
         self.predictor = MultiLayeredPredictor(
             input_dimension=input_dim_mapping[self.model],

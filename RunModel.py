@@ -39,7 +39,7 @@ def main(model_type:str='dual'):
 
     loss_function = torch.nn.MSELoss()
     # PARAMETERS                                         
-    LEARNING_RATE = 0.005                 # learning rate of the optimizer
+    LEARNING_RATE = 0.0005                 # learning rate of the optimizer
     EPOCHS = 30                           # number of epochs over the data
     BATCH_SIZE = 1
 
@@ -50,11 +50,11 @@ def main(model_type:str='dual'):
         lifted_graph_embedding_size = 32,
         lifted_operation = 'GAT',
         lifted_pool = 'max',
-        grounded_num_layers = 3,
+        grounded_num_layers = 6,
         grounded_graph_embedding_size = 16,
-        grounded_operation = 'GAT',
+        grounded_operation = 'GCN',
         grounded_pool = 'max',
-        hidden_dimension = 256,
+        hidden_dimension = 512,
         dropout = 0.5,
         device=device
     ).to(device)
@@ -124,8 +124,10 @@ def main(model_type:str='dual'):
                 loss = loss_function(out.to(torch.float), y.to(torch.float))
                 val_losses.append(loss.item())
 
-                predictions.append(out.to(torch.float))    # use of .item() necessary to avoid warnings and future errors
-                true.append(y.to(torch.float))
+                predictions.append(out.to(torch.float).item())    # use of .item() necessary to avoid warnings and future errors
+                true.append(y.to(torch.float).item())
+        print(f'Mean loss on validation set : {sum(val_losses)/len(val_losses)}')
+        print(f'r2 score on the validation set : {r2_score(true, predictions)}')
     
 
     predictions = []
@@ -155,8 +157,8 @@ def main(model_type:str='dual'):
             loss = loss_fn(out.to(torch.float), y.to(torch.float))
             losses.append(loss.item())
             
-            true.append(y.to(torch.float))
-            predictions.append(out.to(torch.float))
+            true.append(y.to(torch.float).item())
+            predictions.append(out.to(torch.float).item())
 
     print(f'Mean loss on test set : {sum(losses)/len(losses)}')
     print(f'r2 score on the test set : {r2_score(true, predictions)}')

@@ -25,6 +25,8 @@ seed_everything(42)
 
 def main(model_type:str='dual'):
     # set device
+
+    # grounded, batch_size=1 --> per EPOCH 40 seconds GPU, 116 seconds CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # load graph_dataset
@@ -39,7 +41,7 @@ def main(model_type:str='dual'):
     # PARAMETERS                                         
     LEARNING_RATE = 0.005                 # learning rate of the optimizer
     EPOCHS = 30                           # number of epochs over the data
-    BATCH_SIZE = 2
+    BATCH_SIZE = 1
 
     # instantiate model
     model = ModulesGNN.GNN(
@@ -53,7 +55,8 @@ def main(model_type:str='dual'):
         grounded_operation = 'GAT',
         grounded_pool = 'max',
         hidden_dimension = 256,
-        dropout = 0.5
+        dropout = 0.5,
+        device=device
     ).to(device)
     # instantiate optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)

@@ -19,7 +19,8 @@ class ConvolutionModule(torch.nn.Module):
                  dropout,
                  graph_embedding_size,
                  operation,
-                 pool
+                 pool,
+                 device
                  ):
         super().__init__()
         operation_mapping = {
@@ -36,7 +37,7 @@ class ConvolutionModule(torch.nn.Module):
             #'attention' : AttentionalAggregation(conv(graph_embedding_size, graph_embedding_size))
         }
         self.pool = pool_mapping[pool]
-        
+        self.device = device
         self.dropout = dropout
         self.conv1 = conv(input_size, graph_embedding_size)
         self.convs = torch.nn.ModuleList()
@@ -51,7 +52,8 @@ class ConvolutionModule(torch.nn.Module):
     def forward(self, data):
         x, edge_index, batch = data.x.to(torch.float), data.edge_index, data.batch
         graph_size = x.sum(dim=0).sum()
-        handcrafted = torch.cat((x.sum(dim=0)/graph_size, torch.asarray([torch.log(graph_size)])))
+        handcrafted = torch.concat((x.sum(dim=0)/graph_size, torch.log(graph_size).unsqueeze(dim=0)))
+        # handcrafted = (x.sum(dim=0)/graph_size)
         x = F.relu(self.conv1(x, edge_index))
         for conv in self.convs:
             x = F.relu(conv(x, edge_index))
@@ -108,7 +110,8 @@ class GNN(torch.nn.Module):
                  grounded_operation='GAT',
                  grounded_pool='max',
                  hidden_dimension=128,
-                 dropout=0.5
+                 dropout=0.5,
+                 device='cpu'
                  ):
         super().__init__()
 
@@ -120,7 +123,8 @@ class GNN(torch.nn.Module):
             dropout=dropout,
             graph_embedding_size=lifted_graph_embedding_size,
             operation=lifted_operation,
-            pool=lifted_pool
+            pool=lifted_pool,
+            device=device
         )
         self.grounded_conv = ConvolutionModule(
             input_size=7,
@@ -128,7 +132,8 @@ class GNN(torch.nn.Module):
             dropout=dropout,
             graph_embedding_size=grounded_graph_embedding_size,
             operation=grounded_operation,
-            pool=grounded_pool
+            pool=grounded_pool,
+            device=device
         )
         
         input_dim_mapping = {

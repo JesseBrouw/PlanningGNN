@@ -1,0 +1,9 @@
+model_type,operation,n_iter,embedding_size,hidden_size,dropout,pool,loss,r2,batch_size
+dual,GCN,5,16,128,0.5,mean,79.62,0.54,1
+lifted,GAT,5,16,128,0.5,mean,63.29,0.53,1
+lifted,GAT,3,16,512,0.2,max,63.96,0.54,1
+lifted,GCN,6,128,256,0.2,max,68.96,0.53,1
+lifted,TRANS,8,32,256,0.2,max,64.96,0.51,1
+grounded,GAT,4,32,256,0.1,mean,60.50,0.59,1
+grounded,GCN,2,32,128,0.2,max,58.17,0.54,1
+grounded,GCN,9,16,512,0.2,max,52.69,0.60,1

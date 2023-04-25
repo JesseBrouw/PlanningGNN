@@ -104,7 +104,6 @@ def main(operation, model_type, num_samples=15, max_num_epochs=20):
         hidden_dimension=best_trial.config['hidden_size'],
         dropout = best_trial.config['dropout']
         )
-    device = "cpu"
     best_trained_model.to(device)
 
     best_checkpoint_dir = best_trial.checkpoint.dir_or_data
@@ -121,7 +120,10 @@ def main(operation, model_type, num_samples=15, max_num_epochs=20):
         name += f'{key}:{value}_'
 
     # Save as under, mse or over, depending on the chosen value of alpha for the quadquad loss.
-    torch.save(best_trained_model, os.path.join(os.getcwd(), 'saved_models', model_type, 'mse', f'{operation}_{date.today().strftime("%m-%d-%y")}_{test_r2}_{test_loss}_{name}.pt'))
+    with open('./saved_models/results.txt', 'a') as wf:
+        wf.write(f'{model_type},{operation},{best_trial.config["n_iter"]},{best_trial.config["embedding_size"]},{best_trial.config["hidden_size"]},{best_trial.config["dropout"]},{best_trial.config["pool"]},{round(test_loss,2)},{round(test_r2,2)}\n')
+
+    torch.save(best_trained_model, os.path.join(os.getcwd(), 'saved_models', model_type, 'mse', f'{operation}_{date.today().strftime("%m-%d-%y")}_{round(test_r2,2)}_{round(test_loss,2)}_{name}.pt'))
 
     print(f'Best model parameters : \n {best_trained_model.parameters}')
 
@@ -184,7 +186,7 @@ def train(config, checkpoint_dir=None, data_root=None):
         grounded_pool=config['pool'],
         hidden_dimension=config['hidden_size'],
         dropout = config['dropout']
-        )
+        ).to(device)
     # instantiate optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 

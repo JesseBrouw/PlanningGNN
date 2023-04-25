@@ -34,7 +34,7 @@ seed_everything(1)
 def load_data(data_root, model_type):
     # load the data
     dataset = GraphDataset(root=f'{data_root}/labeled_data/', model=model_type, leave_out=[])
-    return dataset.alternative_split((0.7, 0.15, 0.15), shuffle=True)
+    return dataset.alternative_split((0.7, 0.15, 0.15), shuffle=False)
 
 def quadquad_loss(pred, y, p=2, alpha=0.5):
     """
@@ -46,7 +46,7 @@ def quadquad_loss(pred, y, p=2, alpha=0.5):
     """
     return 2*(alpha + (1-2*alpha)*((y-pred)<0)) * torch.abs((y-pred))**p
 
-def main(operation, model_type, num_samples=15, max_num_epochs=20):
+def main(operation, model_type, num_samples=15, max_num_epochs=10):
     # Save root where datafiles reside
     data_root = os.getcwd()
 
@@ -198,6 +198,7 @@ def train(config, checkpoint_dir=None, data_root=None):
         optimizer.load_state_dict(optimizer_state)
     
     train_set, val_set, test_set = load_data(data_root, model_type)
+    print(len(train_set)+len(val_set)+len(test_set))
 
     train_loader = DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
     val_loader =  DataLoader(dataset=val_set, batch_size=BATCH_SIZE, shuffle=True)

@@ -1,2 +1,6 @@
 labeled_data/labeled_grounded_data/raw/grounded_graph_dataset.json
 labeled_data/labeled_lifted_data/raw/graph_dataset.json
+labeled_data/labeled_grounded_data/raw/graph_dataset.json
+__pycache__
+.DS_Store
+results_transfer_learning

@@ -1,8 +1,6 @@
 import torch
-from tqdm import tqdm
 import numpy as np
 import os
-import time
 from sklearn.metrics import r2_score, mean_squared_error
 from ray import tune
 from ray.tune import CLIReporter
@@ -46,20 +44,20 @@ def quadquad_loss(pred, y, p=2, alpha=0.5):
     """
     return 2*(alpha + (1-2*alpha)*((y-pred)<0)) * torch.abs((y-pred))**p
 
-def main(operation, model_type, num_samples=15, max_num_epochs=10):
+def main(operation, model_type, num_samples=15, max_num_epochs=12):
     # Save root where datafiles reside
     data_root = os.getcwd()
 
     # Create dictionary with the parameters that are tuned
     config = {
-        "n_iter": tune.sample_from(lambda _: np.random.randint(1, 10)),
-        "embedding_size": tune.sample_from(lambda _: 2 ** np.random.randint(4, 6)),
-        "hidden_size": tune.sample_from(lambda _: 2 ** np.random.randint(6, 10)),
+        "n_iter": tune.sample_from(lambda _: np.random.randint(7, 13)),
+        "embedding_size": tune.sample_from(lambda _: 2 ** np.random.randint(4, 7)),
+        "hidden_size": tune.sample_from(lambda _: 2 ** np.random.randint(5, 11)),
         "lr": tune.loguniform(1e-4, 1e-3),
-        "dropout": tune.choice([0.1, 0.2, 0.4, 0.5]),
+        "dropout": tune.choice([0.1, 0.2, 0.3]),
         "epochs": max_num_epochs,
         "operation": operation,
-        "pool": tune.choice(['mean', 'max']),
+        "pool": tune.choice(['max']),
         "model_type": model_type
     }
     scheduler = ASHAScheduler(
@@ -91,7 +89,22 @@ def main(operation, model_type, num_samples=15, max_num_epochs=10):
     print("Best trial final validation R^2 score: {}".format(
         best_trial.last_result["r2"]))
 
-    best_trained_model = ModulesGNN.GNN(
+    best_trained_model = ModulesGNN.convolution_predictor(
+        model=model_type,
+        lifted_num_layers = best_trial.config["n_iter"], 
+        lifted_graph_embedding_size=best_trial.config['embedding_size'],
+        lifted_operation=best_trial.config['operation'],
+        lifted_pool=best_trial.config['pool'],
+        grounded_num_layers = best_trial.config["n_iter"], 
+        grounded_graph_embedding_size=best_trial.config['embedding_size'],
+        grounded_operation=best_trial.config['operation'],
+        grounded_pool=best_trial.config['pool'],
+        hidden_dimension=best_trial.config['hidden_size'],
+        dropout = best_trial.config['dropout']
+        )
+    best_trained_model.to(device)
+
+    best_trained_model2 = ModulesGNN.GNN(
         model=model_type,
         lifted_num_layers = best_trial.config["n_iter"], 
         lifted_graph_embedding_size=best_trial.config['embedding_size'],
@@ -123,7 +136,7 @@ def main(operation, model_type, num_samples=15, max_num_epochs=10):
     with open('./saved_models/results.txt', 'a') as wf:
         wf.write(f'{model_type},{operation},{best_trial.config["n_iter"]},{best_trial.config["embedding_size"]},{best_trial.config["hidden_size"]},{best_trial.config["dropout"]},{best_trial.config["pool"]},{round(test_loss,2)},{round(test_r2,2)}\n')
 
-    torch.save(best_trained_model, os.path.join(os.getcwd(), 'saved_models', model_type, 'mse', f'{operation}_{date.today().strftime("%m-%d-%y")}_{round(test_r2,2)}_{round(test_loss,2)}_{name}.pt'))
+    torch.save(best_trained_model, os.path.join(os.getcwd(), 'saved_models', model_type, 'mse', f'conv_{operation}_{date.today().strftime("%m-%d-%y")}_{round(test_r2,2)}_{round(test_loss,2)}_{name}.pt'))
 
     print(f'Best model parameters : \n {best_trained_model.parameters}')
 
@@ -174,7 +187,7 @@ def train(config, checkpoint_dir=None, data_root=None):
     model_type = config['model_type']
 
     # instantiate model
-    model = ModulesGNN.GNN(
+    model = ModulesGNN.convolution_predictor(
         model=model_type,
         lifted_num_layers = config["n_iter"], 
         lifted_graph_embedding_size=config['embedding_size'],
